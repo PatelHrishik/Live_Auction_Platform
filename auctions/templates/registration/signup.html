@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Sign up{% endblock %}
+{% block head %}{% include "registration/_auth_style.html" %}{% endblock %}
+{% block content %}
+<main class="auth">
+  <div class="card">
+    <h1>Create account</h1>
+    <p class="sub">Choose how you'll use Gavel.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+
+      <label>I want to</label>
+      <div class="roles">
+        <label class="opt">
+          <input type="radio" name="role" value="BIDDER" {% if form.role.value != "SELLER" %}checked{% endif %}>
+          <span class="t">Bid</span><span class="d">Join live auctions and place bids</span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="role" value="SELLER" {% if form.role.value == "SELLER" %}checked{% endif %}>
+          <span class="t">Sell</span><span class="d">Create auctions and watch bids arrive</span>
+        </label>
+      </div>
+      {{ form.role.errors }}
+
+      <label for="id_username">Username</label>
+      <input type="text" name="username" id="id_username" maxlength="64" autocomplete="username" required value="{{ form.username.value|default:'' }}">
+      {{ form.username.errors }}
+
+      <label for="id_password1">Password</label>
+      <input type="password" name="password1" id="id_password1" autocomplete="new-password" required>
+      <div class="helptext">At least 8 characters, not a common password.</div>
+      {{ form.password1.errors }}
+
+      <label for="id_password2">Confirm password</label>
+      <input type="password" name="password2" id="id_password2" autocomplete="new-password" required>
+      {{ form.password2.errors }}
+
+      <button class="btn block">Create account</button>
+    </form>
+    <p class="alt">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block head %}{% include "registration/_auth_style.html" %}{% endblock %}
+{% block content %}
+<main class="auth">
+  <div class="card">
+    <h1>Welcome back</h1>
+    <p class="sub">Log in to bid or run your auctions.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      <label for="id_username">Username</label>
+      <input type="text" name="username" id="id_username" autocomplete="username" required autofocus value="{{ form.username.value|default:'' }}">
+      <label for="id_password">Password</label>
+      <input type="password" name="password" id="id_password" autocomplete="current-password" required>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn block">Log in</button>
+    </form>
+    <p class="alt">New here? <a href="{% url 'signup' %}">Create an account</a></p>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% block title %}Live auctions{% endblock %}
+{% block head %}
+<style>
+  main { max-width: 1120px; margin: 0 auto; padding: 28px 16px 48px; display: grid; gap: 20px; grid-template-columns: 340px 1fr; align-items: start; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .side { display: grid; gap: 20px; }
+  .page-head { grid-column: 1 / -1; display: flex; align-items: end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .page-head h1 { font-family: var(--serif); font-size: 32px; font-weight: 700; }
+  .page-head p { margin: 4px 0 0; color: var(--muted); }
+
+  /* create form */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  #create .btn { margin-top: 18px; }
+
+  /* auction list */
+  .list { list-style: none; padding: 0; margin: 0 -8px; display: grid; gap: 2px; }
+  .list li { padding: 10px 12px; border-radius: 10px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; border: 1px solid transparent; }
+  .list li:hover { background: var(--bg); }
+  .list li.active { background: var(--accent-soft); border-color: var(--accent); }
+  .list .t { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list .s { font-size: 12px; color: var(--muted); grid-column: 1; }
+  .list .p { font-weight: 600; font-variant-numeric: tabular-nums; grid-row: 1 / span 2; grid-column: 2; text-align: right; }
+  .list .empty { cursor: default; color: var(--muted); display: block; }
+  .list .empty:hover { background: none; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; }
+  .chip.OPEN { background: var(--ok-soft); color: var(--ok); }
+  .chip.OPEN::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 1.6s infinite; }
+  .chip.CLOSED { background: var(--bg-2); color: var(--muted); }
+  .chip.mine { background: var(--accent-soft); color: var(--accent); }
+  @keyframes pulse { 50% { opacity: .3; } }
+
+  /* detail */
+  #detail { padding: 0; overflow: hidden; }
+  .placeholder { padding: 64px 24px; text-align: center; color: var(--muted); }
+  .placeholder svg { color: var(--accent); opacity: .6; margin-bottom: 12px; }
+  .hero { padding: 24px; background: linear-gradient(135deg, var(--accent-soft), transparent 60%); border-bottom: 1px solid var(--line); }
+  .hero .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .hero h2 { font-family: var(--serif); font-size: 28px; font-weight: 700; line-height: 1.2; }
+  .hero .by { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+  @media (max-width: 520px) { .stats { grid-template-columns: 1fr; } }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .stat .k { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .price { font-family: var(--serif); font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 4px; }
+  .price.bump { animation: bump .5s ease; }
+  @keyframes bump { 30% { color: var(--accent); transform: scale(1.04); } }
+  .timer { font-size: 36px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 4px; }
+  .timer.hot { color: var(--warn); animation: pulse 1s infinite; }
+  .sub { font-size: 13px; color: var(--muted); margin-top: 2px; min-height: 1.3em; }
+  .sub.you { color: var(--ok); font-weight: 600; }
+
+  .body { padding: 20px 24px 24px; display: grid; gap: 20px; }
+  .banner { border-radius: 12px; padding: 16px 18px; font-weight: 600; font-size: 17px; display: flex; gap: 10px; align-items: center; }
+  .banner.win { background: var(--ok-soft); color: var(--ok); }
+  .banner.end { background: var(--bg-2); color: var(--text); }
+  .bidbox { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+  .bidbox label { margin-top: 0; }
+  .money { position: relative; }
+  .money span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-weight: 600; }
+  .money input { padding-left: 26px; font-size: 18px; font-weight: 600; }
+  .bidbox .btn { padding: 12px 22px; font-size: 16px; }
+  .quick { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .quick .btn { padding: 6px 12px; font-size: 13px; }
+  .msg { margin-top: 10px; min-height: 1.5em; font-size: 14px; font-weight: 500; }
+  .msg.ok { color: var(--ok); } .msg.bad { color: var(--bad); }
+  .note { background: var(--bg); border: 1px dashed var(--line); border-radius: 12px; padding: 14px 16px; color: var(--muted); font-size: 14px; }
+
+  #log { max-height: 260px; overflow: auto; display: grid; gap: 0; }
+  #log div { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; display: flex; gap: 10px; }
+  #log div:last-child { border-bottom: 0; }
+  #log time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; min-width: 70px; padding-top: 1px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main>
+  <div class="page-head">
+    <div>
+      <h1>{% if role == "SELLER" %}Your auction house{% else %}Live auctions{% endif %}</h1>
+      <p>{% if role == "SELLER" %}Create an auction and watch bids arrive in real time.{% else %}Pick an auction and outbid the room. Prices update live.{% endif %}</p>
+    </div>
+  </div>
+
+  <div class="side">
+    {% if role == "SELLER" %}
+    <section class="card">
+      <h3 class="eyebrow">New auction</h3>
+      <form id="create">
+        <label for="c-title">Item title</label>
+        <input id="c-title" name="title" placeholder="Vintage camera" maxlength="200" required>
+        <div class="grid2">
+          <div><label for="c-start">Starting price ($)</label><input id="c-start" name="start" type="number" min="0.01" step="0.01" value="10" required></div>
+          <div><label for="c-inc">Min increment ($)</label><input id="c-inc" name="inc" type="number" min="0.01" step="0.01" value="1" required></div>
+        </div>
+        <label for="c-dur">Duration (seconds)</label>
+        <input id="c-dur" name="dur" type="number" min="1" value="120" required>
+        <button class="btn block">Start auction</button>
+        <div class="msg bad" id="create-msg"></div>
+      </form>
+    </section>
+    {% endif %}
+    <section class="card">
+      <h3 class="eyebrow">{% if role == "SELLER" %}Auctions{% else %}Browse{% endif %}</h3>
+      <ul class="list" id="auctions"><li class="empty">Loading…</li></ul>
+    </section>
+  </div>
+
+  <section class="card" id="detail">
+    <div class="placeholder">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 13-8.4 8.4a2 2 0 0 1-2.8-2.8L11.2 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg>
+      <div>{% if role == "SELLER" %}Create an auction or pick one from the list.{% else %}Pick an auction from the list to start bidding.{% endif %}</div>
+    </div>
+  </section>
+</main>
+
+{{ user.username|json_script:"me" }}
+{{ role|json_script:"role" }}
+<script>
+const ME = JSON.parse(document.getElementById("me").textContent);
+const ROLE = JSON.parse(document.getElementById("role").textContent);
+const $ = (s, el = document) => el.querySelector(s);
+const money = c => c == null ? "—" : "$" + (c / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const csrf = () => (document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/) || [])[1] || "";
+
+let current = null;      // latest auction snapshot
+let source = null;       // EventSource
+let skewMs = 0;          // server clock minus client clock
+let tick = null;
+
+async function api(path, opts = {}) {
+  const res = await fetch("/api" + path, {
+    ...opts,
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "X-CSRFToken": csrf(), ...(opts.headers || {}) },
+  });
+  if (res.status === 401) { location.href = "/login/?next=/"; throw new Error("logged out"); }
+  return { status: res.status, body: await res.json() };
+}
+
+async function loadList() {
+  const { body } = await api("/auctions");
+  const ul = $("#auctions");
+  if (!body.auctions.length) {
+    ul.innerHTML = `<li class="empty">${ROLE === "SELLER" ? "No auctions yet. Start one above." : "No auctions yet. Check back soon."}</li>`;
+    return;
+  }
+  ul.innerHTML = body.auctions.map(a => {
+    const mine = a.seller === ME;
+    const sub = a.status === "OPEN"
+      ? `<span class="chip OPEN">Live</span> ${mine ? '<span class="chip mine">Yours</span>' : ""}`
+      : `<span class="chip CLOSED">Ended</span> ${mine ? '<span class="chip mine">Yours</span>' : ""}`;
+    const price = a.status === "OPEN" ? (a.current_price ?? a.starting_price) : a.final_price;
+    return `<li data-id="${a.id}" class="${current && current.id === a.id ? "active" : ""}">
+      <span class="t">${esc(a.title)}</span>
+      <span class="p">${money(price)}</span>
+      <span class="s">${sub}</span>
+    </li>`;
+  }).join("");
+}
+
+$("#auctions").addEventListener("click", e => {
+  const li = e.target.closest("li[data-id]");
+  if (li) open(+li.dataset.id);
+});
+
+const createForm = $("#create");
+if (createForm) createForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const { status, body } = await api("/auctions", { method: "POST", body: JSON.stringify({
+    title: f.get("title"),
+    starting_price: Math.round(f.get("start") * 100),
+    min_increment: Math.round(f.get("inc") * 100),
+    duration_seconds: +f.get("dur"),
+  })});
+  $("#create-msg").textContent = status === 201 ? "" : body.message;
+  if (status === 201) { e.target.title.value = ""; await loadList(); open(body.id); }
+});
+
+function open(id) {
+  if (source) source.close();
+  current = null;
+  history.replaceState(null, "", "?auction=" + id);
+  $("#detail").innerHTML = '<div class="placeholder">Connecting…</div>';
+  source = new EventSource(`/api/auctions/${id}/stream`);
+  source.addEventListener("auction", ev => apply(JSON.parse(ev.data)));
+  loadList();
+}
+
+function apply(a) {
+  // Ignore anything older than what we already show (out-of-order safety).
+  if (current && current.id === a.id && a.version < current.version) return;
+  const prev = current && current.id === a.id ? current : null;
+  skewMs = new Date(a.server_time) - Date.now();
+  current = a;
+  if (!prev) render();
+  update(prev);
+  if (a.status === "CLOSED") { source && source.close(); loadList(); }
+}
+
+function render() {
+  const a = current;
+  const isSeller = a.seller === ME;
+  let action;
+  if (ROLE === "BIDDER") {
+    action = `
+      <form id="bid">
+        <div class="bidbox">
+          <div><label for="amount">Your bid</label><div class="money"><span>$</span><input id="amount" name="amount" type="number" step="0.01" min="0.01" required></div></div>
+          <button class="btn">Place bid</button>
+        </div>
+        <div class="quick">
+          <button type="button" class="btn ghost" data-steps="0">Bid minimum</button>
+          <button type="button" class="btn ghost" data-steps="2">+2 steps</button>
+          <button type="button" class="btn ghost" data-steps="5">+5 steps</button>
+        </div>
+        <div class="msg" id="msg"></div>
+      </form>`;
+  } else {
+    action = `<div class="note">${isSeller ? "This is your auction. Bids from bidders appear below as they arrive." : "Seller accounts can watch auctions but can't bid. Sign up as a bidder to bid."}</div>`;
+  }
+  $("#detail").innerHTML = `
+    <div class="hero">
+      <div class="top"><span class="chip" id="status"></span><span class="muted" style="font-size:13px">Auction #${a.id}</span></div>
+      <h2>${esc(a.title)}</h2>
+      <div class="by">${a.seller ? `Sold by ${esc(a.seller)}${isSeller ? " (you)" : ""}` : ""}</div>
+      <div class="stats">
+        <div class="stat"><div class="k">Current price</div><div class="price" id="price"></div><div class="sub" id="leader"></div></div>
+        <div class="stat"><div class="k">Time left</div><div class="timer" id="timer"></div><div class="sub" id="extended"></div></div>
+      </div>
+    </div>
+    <div class="body">
+      <div id="result"></div>
+      <div id="action">${action}</div>
+      <div><h3 class="eyebrow">Activity</h3><div id="log"></div></div>
+    </div>`;
+  const form = $("#bid");
+  if (form) {
+    form.addEventListener("submit", e => { e.preventDefault(); bid(Math.round(new FormData(e.target).get("amount") * 100)); });
+    form.querySelectorAll("[data-steps]").forEach(b => b.addEventListener("click", () => {
+      if (current.min_next_bid) bid(current.min_next_bid + (+b.dataset.steps) * current.min_increment);
+    }));
+  }
+  clearInterval(tick);
+  tick = setInterval(drawTimer, 100);
+}
+
+function update(prev) {
+  const a = current;
+  const st = $("#status");
+  st.className = "chip " + a.status;
+  st.textContent = a.status === "OPEN" ? "Live" : "Ended";
+
+  const price = $("#price");
+  price.textContent = money(a.current_price ?? a.starting_price);
+  if (prev && a.current_price !== prev.current_price) { price.classList.remove("bump"); void price.offsetWidth; price.classList.add("bump"); }
+
+  const leader = $("#leader");
+  const leading = a.leader && a.leader === ME;
+  leader.className = "sub" + (leading && a.status === "OPEN" ? " you" : "");
+  leader.textContent = a.leader ? (leading ? "You're the highest bidder" : `Leading: ${a.leader}`) : `Starting price · no bids yet`;
+  $("#extended").textContent = a.ends_at !== a.original_ends_at ? "Extended by late bids" : `${a.bid_count} bid${a.bid_count === 1 ? "" : "s"}`;
+
+  const amt = $("#amount");
+  if (amt && a.min_next_bid && (document.activeElement !== amt || !amt.value)) amt.value = (a.min_next_bid / 100).toFixed(2);
+
+  if (prev && a.bid_count > prev.bid_count) log(`<b>${esc(a.leader === ME ? "You" : a.leader)}</b> bid ${money(a.current_price)}${a.ends_at !== prev.ends_at ? " · extended" : ""}`);
+  if (!prev) log(a.bid_count ? `Joined · ${a.bid_count} bid(s) so far` : "Joined · no bids yet");
+
+  if (a.status === "CLOSED") {
+    const form = $("#bid");
+    if (form) form.querySelectorAll("input,button").forEach(el => el.disabled = true);
+    let html;
+    if (!a.winner) html = `<div class="banner end">Auction ended with no bids.</div>`;
+    else if (a.winner === ME) html = `<div class="banner win">🏆 You won at ${money(a.final_price)}!</div>`;
+    else html = `<div class="banner end">🏆 Won by ${esc(a.winner)} at ${money(a.final_price)}</div>`;
+    $("#result").innerHTML = html;
+    if (!prev || prev.status !== "CLOSED") log("Auction closed");
+  }
+  drawTimer();
+}
+
+function fmt(ms) {
+  const s = Math.ceil(ms / 1000);
+  if (s >= 3600) return `${Math.floor(s / 3600)}h ${String(Math.floor(s % 3600 / 60)).padStart(2, "0")}m`;
+  if (s >= 60) return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  return (ms / 1000).toFixed(1) + "s";
+}
+
+function drawTimer() {
+  if (!current) return;
+  const el = $("#timer"); if (!el) return;
+  if (current.status === "CLOSED") { el.textContent = "Ended"; el.className = "timer"; clearInterval(tick); return; }
+  const ms = Math.max(0, new Date(current.ends_at) - (Date.now() + skewMs));
+  el.textContent = fmt(ms);
+  el.className = "timer" + (ms <= 30000 ? " hot" : "");
+}
+
+async function bid(amount) {
+  const msg = $("#msg");
+  const key = crypto.randomUUID ? crypto.randomUUID() : String(Math.random());
+  const { status, body } = await api(`/auctions/${current.id}/bids`, {
+    method: "POST", headers: { "Idempotency-Key": key },
+    body: JSON.stringify({ amount }),
+  });
+  if (status === 201 || status === 200) {
+    msg.className = "msg ok"; msg.textContent = `Bid accepted at ${money(amount)}` + (body.extended ? " · auction extended" : "");
+  } else {
+    msg.className = "msg bad";
+    msg.textContent = body.message + (body.min_required ? ` (minimum ${money(body.min_required)})` : "");
+  }
+  if (body.auction) apply(body.auction);
+}
+
+function log(html) {
+  const el = $("#log"); if (!el) return;
+  const row = document.createElement("div");
+  row.innerHTML = `<time>${new Date().toLocaleTimeString()}</time><span>${html}</span>`;
+  el.prepend(row);
+}
+
+loadList();
+const fromUrl = new URLSearchParams(location.search).get("auction");
+if (fromUrl) open(+fromUrl);
+</script>
+{% endblock %}

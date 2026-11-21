@@ -1,0 +1,16 @@
+<style>
+  .auth { min-height: calc(100vh - 60px); display: grid; place-items: center; padding: 32px 16px;
+          background: radial-gradient(1200px 500px at 50% -10%, var(--accent-soft), transparent 70%); }
+  .auth .card { width: 100%; max-width: 400px; padding: 28px; }
+  .auth h1 { font-family: var(--serif); font-size: 30px; font-weight: 700; margin-bottom: 4px; }
+  .auth .sub { color: var(--muted); margin: 0 0 8px; }
+  .auth .btn { margin-top: 20px; }
+  .auth .alt { text-align: center; margin-top: 18px; font-size: 14px; color: var(--muted); }
+  .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .roles label.opt { margin: 0; cursor: pointer; border: 1.5px solid var(--line); border-radius: 12px; padding: 12px; color: var(--text); transition: border-color .15s, background .15s; }
+  .roles label.opt:hover { border-color: var(--accent); }
+  .roles input { position: absolute; opacity: 0; pointer-events: none; }
+  .roles label.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+  .roles .t { font-weight: 600; display: block; }
+  .roles .d { font-size: 12px; color: var(--muted); }
+</style>
